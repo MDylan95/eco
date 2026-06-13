@@ -1,0 +1,22 @@
+# Configuration Render pour Eco Manager (backend)
+# Doc : https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: eco-manager-api
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run db:setup
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: DATABASE_URL
+        sync: false      # à renseigner manuellement (URL Neon)
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 12h
+      - key: CORS_ORIGIN
+        sync: false      # à renseigner avec l'URL Vercel après déploiement frontend

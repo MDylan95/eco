@@ -1,0 +1,250 @@
+import React, { useEffect, useState } from "react";
+import {
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from "recharts";
+import { TrendingUp, Activity, Users, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
+import { api } from "../api.js";
+
+const C = {
+  lime: "#c8f04a", amber: "#f5a623", red: "#ef5350",
+  border: "#202821", text: "#eaeee6", textDim: "#8a948a", textMute: "#525a52",
+  panel: "#10140f", elevated: "#1a1f1a",
+};
+
+const today = () => new Date().toISOString().slice(0, 10);
+
+export default function Dashboard() {
+  const [date, setDate] = useState(today());
+  const [data, setData] = useState(null);
+  const [planif, setPlanif] = useState([]);
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const load = async (d) => {
+    setLoading(true);
+    setErr("");
+    try {
+      const [dash, p] = await Promise.all([
+        api.dashboard(d),
+        api.planifications(d),
+      ]);
+      setData(dash);
+      setPlanif(p);
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(date); }, [date]);
+
+  if (loading && !data) return <div className="dim">Chargement…</div>;
+  if (err) return <div className="error">{err}</div>;
+  if (!data) return null;
+
+  const k = data.kpis;
+  const planifies = Number(k.equipages_planifies) || 0;
+  const clotures  = Number(k.equipages_clotures) || 0;
+  const coverage  = planifies > 0 ? Math.round((clotures / planifies) * 100) : 0;
+  const total = Number(k.tonnage_total) || 0;
+
+  const trend = data.tendance_7j.map((t) => ({
+    day: new Date(t.jour).toLocaleDateString("fr-FR", { weekday: "short" }),
+    tonnage: Number(t.tonnage),
+  }));
+
+  const parCircuit = data.par_circuit.map((c) => ({
+    name: c.circuit,
+    tonnage: Number(c.tonnage),
+    commune: c.commune,
+  }));
+
+  return (
+    <>
+      <section style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 12, marginBottom: 22 }}>
+        <div>
+          <div className="dim mono" style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>
+            Vue d'ensemble · {new Date(date).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+          </div>
+          <h1 className="serif" style={{ fontSize: "clamp(28px, 5vw, 46px)", margin: 0, fontWeight: 400 }}>
+            Tournée de nuit, <em style={{ color: C.lime }}>en direct</em>
+          </h1>
+        </div>
+        <input
+          type="date"
+          className="input"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          style={{ width: "auto" }}
+        />
+      </section>
+
+      {/* KPI */}
+      <section className="kpi-grid">
+        <Kpi
+          label="Tonnage collecté"
+          value={total.toFixed(1)}
+          unit="t"
+          sub={`${clotures} circuits clôturés`}
+          highlight
+          icon={<TrendingUp size={16} />}
+        />
+        <Kpi
+          label="Couverture"
+          value={coverage}
+          unit="%"
+          sub={`${clotures} / ${planifies}`}
+          icon={<Activity size={16} />}
+        />
+        <Kpi
+          label="Équipages"
+          value={planifies}
+          unit=""
+          sub={`${planifies * 3} agents`}
+          icon={<Users size={16} />}
+        />
+        <Kpi
+          label="En attente"
+          value={planifies - clotures}
+          unit=""
+          sub="tonnages non saisis"
+          icon={<AlertTriangle size={16} />}
+        />
+      </section>
+
+      {/* Charts */}
+      <section className="grid-2">
+        <div className="card">
+          <Header title="Évolution du tonnage" sub="7 dernières nuits" />
+          <div style={{ height: 240, marginTop: 12 }}>
+            <ResponsiveContainer>
+              <AreaChart data={trend} margin={{ top: 6, right: 8, left: -16, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={C.lime} stopOpacity={0.35} />
+                    <stop offset="100%" stopColor={C.lime} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke={C.border} strokeDasharray="3 6" vertical={false} />
+                <XAxis dataKey="day" tick={{ fill: C.textDim, fontSize: 11 }} axisLine={{ stroke: C.border }} tickLine={false} />
+                <YAxis tick={{ fill: C.textDim, fontSize: 11 }} axisLine={false} tickLine={false} unit=" t" />
+                <Tooltip contentStyle={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12 }} labelStyle={{ color: C.textDim }} />
+                <Area type="monotone" dataKey="tonnage" stroke={C.lime} strokeWidth={2} fill="url(#g1)" dot={{ fill: C.lime, r: 3 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="card">
+          <Header title="Par commune" sub="Tonnage du jour" />
+          <div style={{ marginTop: 18 }}>
+            {data.par_commune.length === 0 ? (
+              <div className="dim" style={{ fontSize: 13 }}>Aucune donnée pour ce jour.</div>
+            ) : data.par_commune.map((c, i) => {
+              const max = Math.max(...data.par_commune.map(x => Number(x.tonnage))) || 1;
+              const pct = (Number(c.tonnage) / max) * 100;
+              const colors = [C.lime, "#9bc232", "#6e8f24", "#4d6418"];
+              return (
+                <div key={c.commune} style={{ marginBottom: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13 }}>
+                    <span>{c.commune}</span>
+                    <span className="mono">{Number(c.tonnage).toFixed(1)} <span style={{ color: C.textMute }}>t</span></span>
+                  </div>
+                  <div style={{ height: 6, background: C.elevated, borderRadius: 3, overflow: "hidden" }}>
+                    <div style={{ width: `${pct}%`, height: "100%", background: colors[i] || C.lime, transition: "width 0.5s" }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 22 }}>
+        <Header title="Tonnage par circuit" sub="Détail du soir" />
+        <div style={{ height: 280, marginTop: 12 }}>
+          <ResponsiveContainer>
+            <BarChart data={parCircuit} margin={{ top: 6, right: 8, left: -16, bottom: 0 }}>
+              <CartesianGrid stroke={C.border} strokeDasharray="3 6" vertical={false} />
+              <XAxis dataKey="name" tick={{ fill: C.textDim, fontSize: 11 }} axisLine={{ stroke: C.border }} tickLine={false} />
+              <YAxis tick={{ fill: C.textDim, fontSize: 11 }} axisLine={false} tickLine={false} unit=" t" />
+              <Tooltip contentStyle={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12 }} labelStyle={{ color: C.textDim }} />
+              <Bar dataKey="tonnage" fill={C.lime} radius={[4,4,0,0]} maxBarSize={42} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </section>
+
+      <section className="card">
+        <Header title="Planification du jour" sub={`${clotures}/${planifies} clôturés`} />
+        <div style={{ overflowX: "auto", marginTop: 12 }}>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Circ.</th>
+                <th>Commune</th>
+                <th>Chauffeur</th>
+                <th className="col-hide-mobile">Véhicule</th>
+                <th style={{ textAlign: "right" }}>Tonnage</th>
+                <th style={{ textAlign: "right" }}>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              {planif.length === 0 && (
+                <tr><td colSpan={6} className="dim" style={{ textAlign: "center", padding: 24 }}>
+                  Aucune planification pour cette date.
+                </td></tr>
+              )}
+              {planif.map((p) => (
+                <tr key={p.id}>
+                  <td><span className="mono" style={{ color: C.lime }}>{p.circuit_code}</span></td>
+                  <td>{p.commune}</td>
+                  <td>{p.chauffeur_nom} {p.chauffeur_prenom}</td>
+                  <td className="mono col-hide-mobile" style={{ color: C.textDim }}>{p.vehicule_immat}</td>
+                  <td className="mono" style={{ textAlign: "right" }}>
+                    {p.tonnage != null
+                      ? <>{Number(p.tonnage).toFixed(1)} <span style={{ color: C.textMute }}>t</span></>
+                      : <span style={{ color: C.amber }}>—</span>}
+                  </td>
+                  <td style={{ textAlign: "right" }}>
+                    {p.statut === "done"
+                      ? <span className="pill done"><CheckCircle2 size={12} /> Clôturé</span>
+                      : <span className="pill pending"><Clock size={12} /> En attente</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </>
+  );
+}
+
+function Kpi({ label, value, unit, sub, highlight, icon }) {
+  return (
+    <div className={"kpi" + (highlight ? " highlight" : "")}>
+      <div className="kpi-label">
+        <span>{label}</span>
+        <span style={{ color: highlight ? C.lime : C.textDim }}>{icon}</span>
+      </div>
+      <div>
+        <span className="serif kpi-value">{value}</span>
+        {unit && <span className="kpi-unit">{unit}</span>}
+      </div>
+      <div className="kpi-sub">{sub}</div>
+    </div>
+  );
+}
+
+function Header({ title, sub }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+      <div>
+        <div className="serif" style={{ fontSize: 18 }}>{title}</div>
+        {sub && <div className="dim" style={{ fontSize: 12, marginTop: 2 }}>{sub}</div>}
+      </div>
+    </div>
+  );
+}

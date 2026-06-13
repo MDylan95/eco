@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: eco-manager-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: eco
+      POSTGRES_PASSWORD: ecopass
+      POSTGRES_DB: ecomanager
+    ports:
+      - "5433:5432"
+    volumes:
+      - eco_pgdata:/var/lib/postgresql/data
+
+volumes:
+  eco_pgdata:
