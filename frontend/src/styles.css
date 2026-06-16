@@ -148,6 +148,18 @@ input, select { font-family: inherit; }
   display: flex; align-items: center; justify-content: center;
   color: #ffffff;
 }
+.brand-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: #ffffff;
+}
+.login-brand-logo {
+  width: 48px;
+  height: 48px;
+}
 .brand-name { font-family: var(--font-serif); font-size: 20px; }
 .brand-name em { color: var(--lime); font-style: italic; }
 
@@ -279,6 +291,7 @@ input, select { font-family: inherit; }
   .login-title { font-size: 30px; }
   .nav { gap: 0; }
   .nav a { padding: 6px 10px; font-size: 12px; }
+  .brand-logo { display: none; }
 }
 
 @media (max-width: 560px) {

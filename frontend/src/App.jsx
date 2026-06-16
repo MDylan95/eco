@@ -24,6 +24,7 @@ function ProtectedLayout({ children }) {
       <header className="topbar">
         <Link to="/" className="brand">
           <div className="brand-mark"><Moon size={18} strokeWidth={2.4} /></div>
+          <img className="brand-logo" src="/icons/images%20(1).jpeg" alt="Eco Eburnie" />
           <div>
             <div className="brand-name">Eco <em>Manager</em></div>
             <div className="mono" style={{ fontSize: 10, color: "var(--text-mute)", letterSpacing: "0.08em" }}>

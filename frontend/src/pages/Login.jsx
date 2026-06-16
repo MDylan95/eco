@@ -30,6 +30,7 @@ export default function Login() {
       <div className="login-card">
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
           <div className="brand-mark"><Moon size={20} strokeWidth={2.4} /></div>
+          <img className="brand-logo login-brand-logo" src="/icons/images%20(1).jpeg" alt="Eco Eburnie" />
           <div className="mono" style={{ fontSize: 10, color: "var(--text-mute)", letterSpacing: "0.1em" }}>
             SECTEUR 3 · ABIDJAN
           </div>

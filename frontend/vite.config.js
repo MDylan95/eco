@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "apple-touch-icon.png", "icons/*.png"],
+      includeAssets: ["favicon.svg", "apple-touch-icon.png", "icons/*.png", "icons/*.jpeg"],
       manifest: {
         name: "Eco Manager · Secteur 3",
         short_name: "Eco Manager",
@@ -65,7 +65,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
+        globPatterns: ["**/*.{js,css,html,svg,png,jpg,jpeg,ico,woff2}"],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
