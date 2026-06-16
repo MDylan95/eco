@@ -5,8 +5,8 @@ import { api, setSession } from "../api.js";
 
 export default function Login() {
   const nav = useNavigate();
-  const [email, setEmail] = useState("superviseur@ecomanager.ci");
-  const [password, setPassword] = useState("super123");
+  const [email, setEmail] = useState("admin@ecomanager.ci");
+  const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -35,7 +35,7 @@ export default function Login() {
           </div>
         </div>
         <h1 className="login-title">Eco <em>Manager</em></h1>
-        <p className="login-sub">Connectez-vous pour piloter la collecte de nuit.</p>
+        <p className="login-sub">Connectez-vous pour administrer la collecte de nuit.</p>
 
         <form onSubmit={submit}>
           <div className="form-row">
@@ -74,7 +74,7 @@ export default function Login() {
         </form>
 
         <div style={{ marginTop: 18, fontSize: 11, color: "var(--text-mute)", textAlign: "center" }} className="mono">
-          superviseur@ecomanager.ci / super123
+          Accès administrateur
         </div>
       </div>
     </div>
