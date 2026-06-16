@@ -39,8 +39,8 @@ function ProtectedLayout({ children }) {
           <NavLink to="/production">Production</NavLink>
         </nav>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span className="mono" style={{ fontSize: 11, color: "var(--text-dim)" }}>
+        <div className="user-menu">
+          <span className="mono user-name">
             {user.nom}
           </span>
           <button className="btn ghost" onClick={logout} title="Se déconnecter">
