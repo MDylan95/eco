@@ -6,9 +6,9 @@ import { TrendingUp, Activity, Users, AlertTriangle, CheckCircle2, Clock } from 
 import { api } from "../api.js";
 
 const C = {
-  lime: "#c8f04a", amber: "#f5a623", red: "#ef5350",
-  border: "#202821", text: "#eaeee6", textDim: "#8a948a", textMute: "#525a52",
-  panel: "#10140f", elevated: "#1a1f1a",
+  lime: "#5f9f14", amber: "#b7791f", red: "#d43d3d",
+  border: "#d9e2d2", text: "#172018", textDim: "#5b665d", textMute: "#849087",
+  panel: "#ffffff", elevated: "#eef4e8",
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
