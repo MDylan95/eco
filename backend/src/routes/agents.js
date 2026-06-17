@@ -50,21 +50,42 @@ router.post("/", authRequired, requireRole("admin"), async (req, res) => {
 
 // PUT /api/agents/:id
 router.put("/:id", authRequired, requireRole("admin"), async (req, res) => {
-  const { nom, prenom, fonction, actif } = req.body;
+  const { matricule, nom, prenom, fonction, actif } = req.body;
+  const normalizedMatricule = String(matricule || "").trim().toUpperCase();
   const normalizedNom = String(nom || "").trim().toUpperCase();
   const normalizedPrenom = String(prenom || "").trim();
+  const normalizedActif = actif === false ? false : true;
 
-  if (!normalizedNom || !["chauffeur", "eboueur"].includes(fonction)) {
+  if (!normalizedMatricule || !normalizedNom || !["chauffeur", "eboueur"].includes(fonction)) {
     return res.status(400).json({ error: "Champs invalides" });
   }
   try {
     const r = await db.query(
-      `UPDATE agents SET nom=$1, prenom=$2, fonction=$3, actif=$4
-       WHERE id=$5 RETURNING *`,
-      [normalizedNom, normalizedPrenom, fonction, actif, req.params.id]
+      `UPDATE agents SET matricule=$1, nom=$2, prenom=$3, fonction=$4, actif=$5
+       WHERE id=$6 RETURNING *`,
+      [normalizedMatricule, normalizedNom, normalizedPrenom, fonction, normalizedActif, req.params.id]
     );
     if (r.rowCount === 0) return res.status(404).json({ error: "Agent introuvable" });
     res.json(r.rows[0]);
+  } catch (e) {
+    if (e.code === "23505") return res.status(409).json({ error: "Matricule déjà existant" });
+    console.error(e);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// DELETE /api/agents/:id (désactivation)
+router.delete("/:id", authRequired, requireRole("admin"), async (req, res) => {
+  try {
+    const r = await db.query(
+      `UPDATE agents
+         SET actif = FALSE
+       WHERE id=$1
+       RETURNING *`,
+      [req.params.id]
+    );
+    if (r.rowCount === 0) return res.status(404).json({ error: "Agent introuvable" });
+    res.status(204).end();
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Erreur serveur" });

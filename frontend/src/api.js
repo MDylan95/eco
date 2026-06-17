@@ -59,11 +59,29 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ matricule, nom, prenom, fonction }),
     }),
+  updateAgent: (id, { matricule, nom, prenom, fonction, actif }) =>
+    request(`/agents/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ matricule, nom, prenom, fonction, actif }),
+    }),
+  deleteAgent: (id) =>
+    request(`/agents/${id}`, {
+      method: "DELETE",
+    }),
   vehicules: () => request("/vehicules"),
   createVehicule: ({ immatriculation, type }) =>
     request("/vehicules", {
       method: "POST",
       body: JSON.stringify({ immatriculation, type }),
+    }),
+  updateVehicule: (id, { immatriculation, type, actif }) =>
+    request(`/vehicules/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ immatriculation, type, actif }),
+    }),
+  deleteVehicule: (id) =>
+    request(`/vehicules/${id}`, {
+      method: "DELETE",
     }),
 
   // Planifications
