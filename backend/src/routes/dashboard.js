@@ -69,12 +69,48 @@ router.get("/", authRequired, async (req, res) => {
       [date]
     );
 
+    const semaineQ = await db.query(
+      `
+      SELECT
+        to_char(date_trunc('week', $1::date), 'YYYY-MM-DD') AS debut,
+        to_char(date_trunc('week', $1::date) + INTERVAL '6 days', 'YYYY-MM-DD') AS fin
+      `,
+      [date]
+    );
+
+    const chauffeurHebdoQ = await db.query(
+      `
+      WITH semaine AS (
+        SELECT date_trunc('week', $1::date) AS debut
+      )
+      SELECT
+        a.id AS chauffeur_id,
+        a.matricule,
+        a.nom,
+        a.prenom,
+        COUNT(pr.id)::int AS voyages,
+        COALESCE(SUM(pr.tonnage), 0)::numeric AS tonnage_hebdo
+      FROM planifications p
+      JOIN semaine s ON TRUE
+      JOIN agents a ON a.id = p.chauffeur_id
+      LEFT JOIN productions pr ON pr.planification_id = p.id
+      WHERE p.date_planification >= s.debut
+        AND p.date_planification < (s.debut + INTERVAL '7 days')
+      GROUP BY a.id, a.matricule, a.nom, a.prenom
+      HAVING COUNT(pr.id) > 0
+      ORDER BY COALESCE(SUM(pr.tonnage), 0) DESC, voyages DESC
+      `,
+      [date]
+    );
+
     res.json({
       date,
       kpis: kpisQ.rows[0],
       par_commune: parCommuneQ.rows,
       par_circuit: parCircuitQ.rows,
       tendance_7j: trendQ.rows,
+      semaine: semaineQ.rows[0],
+      par_chauffeur_hebdo: chauffeurHebdoQ.rows,
     });
   } catch (e) {
     console.error(e);

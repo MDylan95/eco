@@ -54,7 +54,17 @@ export const api = {
     request("/circuits" + (commune_id ? `?commune_id=${commune_id}` : "")),
   agents: (fonction) =>
     request("/agents" + (fonction ? `?fonction=${fonction}` : "")),
+  createAgent: ({ matricule, nom, prenom, fonction }) =>
+    request("/agents", {
+      method: "POST",
+      body: JSON.stringify({ matricule, nom, prenom, fonction }),
+    }),
   vehicules: () => request("/vehicules"),
+  createVehicule: ({ immatriculation, type }) =>
+    request("/vehicules", {
+      method: "POST",
+      body: JSON.stringify({ immatriculation, type }),
+    }),
 
   // Planifications
   planifications: (date) => request(`/planifications?date=${date}`),

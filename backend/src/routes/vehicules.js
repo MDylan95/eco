@@ -18,11 +18,14 @@ router.get("/", authRequired, async (req, res) => {
 
 router.post("/", authRequired, requireRole("admin"), async (req, res) => {
   const { immatriculation, type } = req.body;
-  if (!immatriculation) return res.status(400).json({ error: "Immatriculation requise" });
+  const normalizedImmatriculation = String(immatriculation || "").trim().toUpperCase();
+  const normalizedType = String(type || "").trim();
+
+  if (!normalizedImmatriculation) return res.status(400).json({ error: "Immatriculation requise" });
   try {
     const r = await db.query(
       `INSERT INTO vehicules (immatriculation, type) VALUES ($1, $2) RETURNING *`,
-      [immatriculation, type || null]
+      [normalizedImmatriculation, normalizedType || null]
     );
     res.status(201).json(r.rows[0]);
   } catch (e) {

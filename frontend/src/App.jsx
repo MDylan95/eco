@@ -5,6 +5,7 @@ import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Planification from "./pages/Planification.jsx";
 import Production from "./pages/Production.jsx";
+import Referentiel from "./pages/Referentiel.jsx";
 import PWAPrompt from "./components/PWAPrompt.jsx";
 import { getUser, clearSession } from "./api.js";
 
@@ -37,6 +38,7 @@ function ProtectedLayout({ children }) {
           <NavLink to="/" exact>Tableau de bord</NavLink>
           <NavLink to="/planification">Planification</NavLink>
           <NavLink to="/production">Production</NavLink>
+          {user?.role === "admin" && <NavLink to="/referentiel">Référentiel</NavLink>}
         </nav>
 
         <div className="user-menu">
@@ -73,6 +75,7 @@ export default function App() {
         <Route path="/" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
         <Route path="/planification" element={<ProtectedLayout><Planification /></ProtectedLayout>} />
         <Route path="/production" element={<ProtectedLayout><Production /></ProtectedLayout>} />
+        <Route path="/referentiel" element={<ProtectedLayout><Referentiel /></ProtectedLayout>} />
       </Routes>
     </>
   );

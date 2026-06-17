@@ -54,6 +54,12 @@ export default function Dashboard() {
     tonnage: Number(t.tonnage),
   }));
 
+  const chauffeursHebdo = Array.isArray(data.par_chauffeur_hebdo) ? data.par_chauffeur_hebdo : [];
+  const semaine = data.semaine;
+  const semaineLabel = semaine
+    ? `Semaine du ${new Date(`${semaine.debut}T00:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}`
+    : "7 derniers jours";
+
   const parCircuit = data.par_circuit.map((c) => ({
     name: c.circuit,
     tonnage: Number(c.tonnage),
@@ -173,6 +179,37 @@ export default function Dashboard() {
               <Bar dataKey="tonnage" fill={C.lime} radius={[4,4,0,0]} maxBarSize={42} />
             </BarChart>
           </ResponsiveContainer>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 22 }}>
+        <Header title="Performances hebdomadaires par chauffeur" sub={semaineLabel} />
+        <div style={{ overflowX: "auto", marginTop: 12 }}>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Chauffeur</th>
+                <th>Tonnage hebdomadaire</th>
+                <th>Voyages</th>
+              </tr>
+            </thead>
+            <tbody>
+              {chauffeursHebdo.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="dim" style={{ textAlign: "center", padding: 24 }}>
+                    Aucune production hebdomadaire enregistrée.
+                  </td>
+                </tr>
+              )}
+              {chauffeursHebdo.map((c) => (
+                <tr key={c.chauffeur_id}>
+                  <td>{c.matricule} · {c.nom} {c.prenom}</td>
+                  <td className="mono">{Number(c.tonnage_hebdo).toFixed(1)} <span style={{ color: C.textMute }}>t</span></td>
+                  <td className="mono" style={{ textAlign: "right" }}>{c.voyages}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
 

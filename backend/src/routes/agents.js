@@ -27,14 +27,18 @@ router.get("/", authRequired, async (req, res) => {
 // POST /api/agents
 router.post("/", authRequired, requireRole("admin"), async (req, res) => {
   const { matricule, nom, prenom, fonction } = req.body;
-  if (!matricule || !nom || !prenom || !["chauffeur", "eboueur"].includes(fonction)) {
+  const normalizedMatricule = String(matricule || "").trim().toUpperCase();
+  const normalizedNom = String(nom || "").trim().toUpperCase();
+  const normalizedPrenom = String(prenom || "").trim();
+
+  if (!normalizedMatricule || !normalizedNom || !["chauffeur", "eboueur"].includes(fonction)) {
     return res.status(400).json({ error: "Champs invalides" });
   }
   try {
     const r = await db.query(
       `INSERT INTO agents (matricule, nom, prenom, fonction)
        VALUES ($1, $2, $3, $4) RETURNING *`,
-      [matricule, nom, prenom, fonction]
+      [normalizedMatricule, normalizedNom, normalizedPrenom, fonction]
     );
     res.status(201).json(r.rows[0]);
   } catch (e) {
@@ -47,11 +51,17 @@ router.post("/", authRequired, requireRole("admin"), async (req, res) => {
 // PUT /api/agents/:id
 router.put("/:id", authRequired, requireRole("admin"), async (req, res) => {
   const { nom, prenom, fonction, actif } = req.body;
+  const normalizedNom = String(nom || "").trim().toUpperCase();
+  const normalizedPrenom = String(prenom || "").trim();
+
+  if (!normalizedNom || !["chauffeur", "eboueur"].includes(fonction)) {
+    return res.status(400).json({ error: "Champs invalides" });
+  }
   try {
     const r = await db.query(
       `UPDATE agents SET nom=$1, prenom=$2, fonction=$3, actif=$4
        WHERE id=$5 RETURNING *`,
-      [nom, prenom, fonction, actif, req.params.id]
+      [normalizedNom, normalizedPrenom, fonction, actif, req.params.id]
     );
     if (r.rowCount === 0) return res.status(404).json({ error: "Agent introuvable" });
     res.json(r.rows[0]);
