@@ -40,6 +40,10 @@ function normalizeText(value) {
   return String(value || "").trim();
 }
 
+function formatFieldList(fields) {
+  return fields.join(", ");
+}
+
 // GET /api/planifications?date=YYYY-MM-DD
 router.get("/", authRequired, async (req, res) => {
   const normalizedDate = req.query.date ? normalizeDate(req.query.date) : new Date().toISOString().slice(0, 10);
@@ -117,8 +121,18 @@ router.post("/", authRequired, requireRole("admin", "superviseur"), async (req, 
     vehicule_id: normalizeInt(vehicule_id),
   };
 
-  if (!data.circuit_id || !data.chauffeur_id || !data.eboueur1_id || !data.eboueur2_id || !data.eboueur3_id) {
-    return res.status(400).json({ error: "Tous les champs sont requis" });
+  const missingFields = [];
+  if (!data.circuit_id) missingFields.push("circuit");
+  if (!data.chauffeur_id) missingFields.push("chauffeur");
+  if (!data.eboueur1_id) missingFields.push("eboueur1");
+  if (!data.eboueur2_id) missingFields.push("eboueur2");
+  if (!data.eboueur3_id) missingFields.push("eboueur3");
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({
+      error: `Champs manquants ou invalides : ${formatFieldList(missingFields)}`,
+      fields: missingFields,
+    });
   }
 
   const agentIds = [data.chauffeur_id, data.eboueur1_id, data.eboueur2_id, data.eboueur3_id];

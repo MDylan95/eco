@@ -4,6 +4,21 @@ import { api } from "../api.js";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
+function getMissingFields(form) {
+  const missing = [];
+
+  if (!String(form.commune_id || "").trim()) missing.push("Commune");
+  if (!String(form.circuit_id || "").trim()) missing.push("Circuit");
+  if (!String(form.chauffeur_id || "").trim()) missing.push("Chauffeur");
+  if (!String(form.vehicule_immatriculation || "").trim()) missing.push("Véhicule");
+  if (!String(form.vehicule_type || "").trim()) missing.push("Type de véhicule");
+  if (!String(form.eboueur1_id || "").trim()) missing.push("Éboueur 1");
+  if (!String(form.eboueur2_id || "").trim()) missing.push("Éboueur 2");
+  if (!String(form.eboueur3_id || "").trim()) missing.push("Éboueur 3");
+
+  return missing;
+}
+
 export default function Planification() {
   const [date, setDate] = useState(today());
   const [communes, setCommunes] = useState([]);
@@ -63,6 +78,24 @@ export default function Planification() {
     e.preventDefault();
     setErr(""); setOk(""); setBusy(true);
     try {
+      const missingFields = getMissingFields(form);
+      if (missingFields.length > 0) {
+        setErr(`Champs à compléter : ${missingFields.join(", ")}`);
+        return;
+      }
+
+      const selectedAgents = [
+        form.chauffeur_id,
+        form.eboueur1_id,
+        form.eboueur2_id,
+        form.eboueur3_id,
+      ].map((value) => String(value));
+
+      if (new Set(selectedAgents).size !== selectedAgents.length) {
+        setErr("Le chauffeur et les 3 éboueurs doivent être différents.");
+        return;
+      }
+
       await api.createPlanification({
         date_planification: date,
         circuit_id: Number(form.circuit_id),
