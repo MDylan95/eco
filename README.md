@@ -6,7 +6,7 @@ Plateforme de suivi de la collecte de nuit — **Secteur 3 d'Abidjan**
 ## Stack
 
 - **Frontend** : React 18 + Vite + Recharts + PWA (installable mobile)
-- **Backend** : Node.js 18+ + Express
+- **Backend** : Node.js 20+ + Express
 - **Base de données** : PostgreSQL 16
 - **Auth** : JWT
 
@@ -16,7 +16,7 @@ Voir **[DEPLOYMENT.md](./DEPLOYMENT.md)** pour le guide complet pas-à-pas (Neon
 
 ## Prérequis (développement local)
 
-- Node.js **≥ 18** ([nodejs.org](https://nodejs.org))
+- Node.js **20** (via `.nvmrc`) ([nodejs.org](https://nodejs.org))
 - Docker Desktop (pour la base de données) — alternative : PostgreSQL installé en local
 
 ---
@@ -29,7 +29,7 @@ Voir **[DEPLOYMENT.md](./DEPLOYMENT.md)** pour le guide complet pas-à-pas (Neon
 docker compose up -d
 ```
 
-Cela démarre PostgreSQL sur `localhost:5432` (user `eco`, password `ecopass`, db `ecomanager`).
+Cela démarre PostgreSQL sur `localhost:5433` (user `eco`, password `ecopass`, db `ecomanager`) avec la configuration actuelle du `docker-compose.yml` (`5433:5432`).
 
 > Sans Docker ? Installez PostgreSQL localement et créez la base manuellement avec ces credentials, puis adaptez `backend/.env`.
 
@@ -43,6 +43,8 @@ npm run db:init     # crée les tables
 npm run db:seed     # insère les données (communes, circuits, agents, véhicules, comptes test)
 npm run dev         # démarre l'API sur http://localhost:4000
 ```
+
+> Mise à jour d'une base existante ? Exécutez `npm run db:setup` pour appliquer la migration (colonne véhicule/éboueur 3).
 
 ### 3. Frontend
 
@@ -62,6 +64,9 @@ Ouvrez **http://localhost:5173** dans le navigateur (PC ou mobile sur le même r
 |---|---|---|
 | Administrateur | `admin@ecomanager.ci` | `admin123` |
 | Superviseur | `superviseur@ecomanager.ci` | `super123` |
+
+> En production, les comptes initiaux sont lus depuis les variables `ADMIN_INIT_PASSWORD` et `SUPERVISEUR_INIT_PASSWORD`.  
+> Conservez des secrets forts dans vos environnements.
 
 ---
 
@@ -160,7 +165,7 @@ Une fois installée, l'icône Eco Manager apparaît sur l'écran d'accueil et l'
 
 ## 🔒 Règles métier appliquées
 
-- 1 équipage = 1 chauffeur + 2 éboueurs (distincts) + 1 véhicule + 1 circuit
+- 1 équipage = 1 chauffeur + 3 éboueurs (distincts) + 1 véhicule + 1 circuit
 - Un circuit ne peut être planifié qu'**une seule fois** par nuit
 - Un chauffeur / véhicule / éboueur ne peut être affecté qu'**à un seul circuit** par nuit
 - Une planification = **un seul tonnage** (une rotation par nuit)
@@ -192,3 +197,8 @@ Une fois installée, l'icône Eco Manager apparaît sur l'écran d'accueil et l'
 ---
 
 **Eco Manager v0.1** · Prototype fonctionnel · Mai 2026
+## ⚠️  Sécurité
+
+- `npm run db:init` détruit/réinstalle le schéma si exécuté sur une base existante.  
+  En production, cette commande n'est autorisée qu'avec `FORCE_DB_INIT=true`.
+- En production, définissez explicitement `CORS_ORIGIN` avec le(s) vrai(s) domaine(s) front.

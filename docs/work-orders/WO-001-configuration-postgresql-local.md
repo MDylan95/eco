@@ -37,7 +37,7 @@ Exclu :
 - Environnement : local developpement
 - Base : PostgreSQL 16
 - Mode d'execution : Docker Compose
-- Port local : `5432`
+- Port local : `5433` (port exposé par `docker-compose.yml` dans ce dépôt)
 - Nom base : `ecomanager`
 - Utilisateur : `eco`
 - Mot de passe : `ecopass`
@@ -47,7 +47,7 @@ Exclu :
 ## Prerequis
 
 - Docker disponible et demarre.
-- Node.js 18 ou superieur.
+- Node.js 20 ou supérieur.
 - Acces au repertoire projet `eco-manager`.
 - Ports `5432`, `4000` et `5173` disponibles.
 
@@ -163,6 +163,9 @@ Le work order est accepte si :
 
 - CORS en local :
   - verifier que `backend/.env` contient `CORS_ORIGIN=http://localhost:5173`.
+
+> Si vous préférez garder PostgreSQL local sur `5432`, adaptez `docker-compose.yml`
+> et `backend/.env` en conséquence.
 
 ## Rollback
 

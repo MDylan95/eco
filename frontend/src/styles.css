@@ -327,6 +327,7 @@ input, select { font-family: inherit; }
   .main { padding: 16px; }
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .grid-2 { grid-template-columns: 1fr; }
+  .filter-grid { grid-template-columns: 1fr !important; }
   .login-card { padding: 28px 20px; }
   .login-title { font-size: 30px; }
   .login-card .brand-logo { display: block; }

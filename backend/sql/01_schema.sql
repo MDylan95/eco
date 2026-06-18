@@ -75,13 +75,13 @@ CREATE TABLE circuits (
 -- ---------------------------------------------------------------------------
 CREATE TABLE centres_transfert (
   id      SERIAL PRIMARY KEY,
-  nom     VARCHAR(100) NOT NULL,
+  nom     VARCHAR(100) NOT NULL UNIQUE,
   adresse TEXT
 );
 
 -- ---------------------------------------------------------------------------
 -- Planification journalière (étape 1)
--- 1 équipage = 1 chauffeur + 2 éboueurs + 1 véhicule sur 1 circuit
+-- 1 équipage = 1 chauffeur + 3 éboueurs + 1 véhicule sur 1 circuit
 -- ---------------------------------------------------------------------------
 CREATE TABLE planifications (
   id                 SERIAL PRIMARY KEY,
@@ -90,6 +90,7 @@ CREATE TABLE planifications (
   chauffeur_id       INT  NOT NULL REFERENCES agents(id),
   eboueur1_id        INT  NOT NULL REFERENCES agents(id),
   eboueur2_id        INT  NOT NULL REFERENCES agents(id),
+  eboueur3_id        INT  NOT NULL REFERENCES agents(id),
   vehicule_id        INT  NOT NULL REFERENCES vehicules(id),
   superviseur_id     INT  REFERENCES users(id),
   created_at         TIMESTAMP DEFAULT NOW(),
@@ -100,7 +101,10 @@ CREATE TABLE planifications (
   -- Les 3 agents de l'équipage doivent être distincts
   CHECK (chauffeur_id <> eboueur1_id
      AND chauffeur_id <> eboueur2_id
-     AND eboueur1_id  <> eboueur2_id)
+     AND chauffeur_id <> eboueur3_id
+     AND eboueur1_id  <> eboueur2_id
+     AND eboueur1_id  <> eboueur3_id
+     AND eboueur2_id  <> eboueur3_id)
 );
 
 -- Un chauffeur ne peut conduire qu'un seul circuit par nuit
@@ -111,8 +115,33 @@ CREATE UNIQUE INDEX uniq_chauffeur_par_jour
 CREATE UNIQUE INDEX uniq_vehicule_par_jour
   ON planifications (date_planification, vehicule_id);
 
--- (Le contrôle d'unicité des éboueurs sur la journée est fait côté backend
---  car ils peuvent occuper deux colonnes différentes)
+-- Contrôle d'unicité des éboueurs sur la journée (toutes colonnes confondues)
+CREATE OR REPLACE FUNCTION prevent_duplicate_eboueurs_per_jour()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM planifications p
+    WHERE p.date_planification = NEW.date_planification
+      AND p.id <> COALESCE(NEW.id, 0)
+      AND (
+        p.eboueur1_id IN (NEW.eboueur1_id, NEW.eboueur2_id, NEW.eboueur3_id)
+        OR p.eboueur2_id IN (NEW.eboueur1_id, NEW.eboueur2_id, NEW.eboueur3_id)
+        OR p.eboueur3_id IN (NEW.eboueur1_id, NEW.eboueur2_id, NEW.eboueur3_id)
+      )
+  ) THEN
+    RAISE EXCEPTION 'Un éboueur ne peut être affecté qu''à un seul équipage pour une même nuit.'
+      USING ERRCODE = '23505',
+            CONSTRAINT = 'chk_planif_eboueurs_jour_uniques';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_planif_eboueurs_uniq_jour
+  BEFORE INSERT OR UPDATE ON planifications
+  FOR EACH ROW
+  EXECUTE FUNCTION prevent_duplicate_eboueurs_per_jour();
 
 CREATE INDEX idx_planif_date ON planifications(date_planification);
 

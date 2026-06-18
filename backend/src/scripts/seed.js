@@ -2,11 +2,33 @@ require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const db = require("../db");
 
+const DEV_DEFAULT_PASSWORD = "admin123";
+
+function resolveInitPassword(envName, roleLabel, isRequiredInProd = true) {
+  const raw = process.env[envName];
+  if (raw && raw.trim()) return raw.trim();
+
+  if (process.env.NODE_ENV === "production" || isRequiredInProd) {
+    throw new Error(
+      `Variable ${envName} manquante dans .env pour le compte initial ${roleLabel} en production.`
+    );
+  }
+
+  console.warn(`⚠️ ${envName} non définie. Utilisation du mot de passe temporaire "${DEV_DEFAULT_PASSWORD}" pour ${roleLabel} (non recommandé en production).`);
+  return DEV_DEFAULT_PASSWORD;
+}
+
 (async () => {
   try {
     // ----- Utilisateurs -----
-    const adminPwd = await bcrypt.hash("admin123", 10);
-    const supPwd   = await bcrypt.hash("super123", 10);
+    const adminPwd = await bcrypt.hash(
+      resolveInitPassword("ADMIN_INIT_PASSWORD", "administrateur"),
+      10
+    );
+    const supPwd = await bcrypt.hash(
+      resolveInitPassword("SUPERVISEUR_INIT_PASSWORD", "superviseur"),
+      10
+    );
 
     await db.query(
       `INSERT INTO users (nom, email, password_hash, role) VALUES
@@ -50,9 +72,9 @@ const db = require("../db");
 
     // ----- Centre de transfert -----
     await db.query(
-      `INSERT INTO centres_transfert (nom, adresse) VALUES
-       ('Centre de transfert Akouédo', 'Abidjan')
-       ON CONFLICT DO NOTHING`
+      `INSERT INTO centres_transfert (nom, adresse)
+       VALUES ('Centre de transfert Akouédo', 'Abidjan')
+       ON CONFLICT (nom) DO NOTHING`
     );
 
     // ----- Agents de test -----
@@ -112,8 +134,8 @@ const db = require("../db");
     }
 
     console.log("✅ Données initiales insérées");
-    console.log("   → Admin :        admin@ecomanager.ci / admin123");
-    console.log("   → Superviseur :  superviseur@ecomanager.ci / super123");
+    console.log("   → Compte administrateur configuré");
+    console.log("   → Compte superviseur configuré");
     process.exit(0);
   } catch (e) {
     console.error("❌ Erreur seed :", e.message);

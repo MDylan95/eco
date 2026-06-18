@@ -82,7 +82,9 @@ postgresql://eco_owner:AbCdEf123@ep-frosty-cloud-xxx.eu-central-1.aws.neon.tech/
 | `DATABASE_URL` | (collez l'URL Neon de l'étape 2) |
 | `JWT_SECRET` | (n'importe quelle chaîne aléatoire, ex. `eco-manager-secret-2026-XYZ`) |
 | `JWT_EXPIRES_IN` | `12h` |
-| `CORS_ORIGIN` | `*` (temporaire, sera mis à jour à l'étape 5) |
+| `ADMIN_INIT_PASSWORD` | (mot de passe initial admin, ex. `Admin#2026`) |
+| `SUPERVISEUR_INIT_PASSWORD` | (mot de passe initial superviseur, ex. `Super#2026`) |
+| `CORS_ORIGIN` | (URL Vercel exacte, ex: `https://eco-manager-xxx.vercel.app`) |
 | `NODE_VERSION` | `20` |
 
 6. Cliquez **"Create Web Service"**.
@@ -123,6 +125,8 @@ Une fois "Live", notez l'URL en haut : `https://eco-manager-api.onrender.com` (o
 | `VITE_API_URL` | (l'URL backend de l'étape 3, ex. `https://eco-manager-api.onrender.com`) |
 
 6. Cliquez **"Deploy"**.
+
+> À ce stade, si votre frontend n'est pas encore connu, vous pouvez redéployer ensuite avec la valeur exacte de `CORS_ORIGIN` et la bonne URL Vercel.
 
 Vercel build (~1 min). Une fois terminé, vous obtenez votre URL : `https://eco-manager-xxx.vercel.app`.
 

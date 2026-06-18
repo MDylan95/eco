@@ -10,16 +10,40 @@ const planifRoutes = require("./routes/planifications");
 const prodRoutes = require("./routes/productions");
 const dashRoutes = require("./routes/dashboard");
 
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET est requis dans l'environnement backend.");
+}
+
 const app = express();
 
 // CORS : accepte une liste d'origines (CSV) ou * en dev
-const corsOrigins = (process.env.CORS_ORIGIN || "*")
+const corsOriginRaw = process.env.CORS_ORIGIN || "";
+const corsOrigins = corsOriginRaw
   .split(",")
-  .map((o) => o.trim());
+  .map((o) => o.trim())
+  .filter(Boolean);
+const hasWildcardCors = corsOrigins.includes("*");
+const inProduction = process.env.NODE_ENV === "production";
+
+if (hasWildcardCors) {
+  if (inProduction) {
+    throw new Error("CORS_ORIGIN '*' n'est pas autorisé en production. Définissez les origines explicites.");
+  }
+}
+
+const finalCorsOrigins = hasWildcardCors
+  ? true
+  : corsOrigins.length > 0
+  ? corsOrigins
+  : ["http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173", "http://127.0.0.1:5174"];
+
+if (inProduction && !hasWildcardCors && corsOrigins.length === 0) {
+  throw new Error("Mode production : configurez CORS_ORIGIN (ex: https://mon-domaine.vercel.app).");
+}
 
 app.use(
   cors({
-    origin: corsOrigins.includes("*") ? true : corsOrigins,
+    origin: finalCorsOrigins,
   })
 );
 app.use(express.json());

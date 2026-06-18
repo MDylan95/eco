@@ -18,7 +18,9 @@ export default function Planification() {
     chauffeur_id: "",
     eboueur1_id: "",
     eboueur2_id: "",
-    vehicule_id: "",
+    eboueur3_id: "",
+    vehicule_immatriculation: "",
+    vehicule_type: "Tasseur 24m3",
   });
   const [err, setErr] = useState("");
   const [ok, setOk] = useState("");
@@ -48,6 +50,15 @@ export default function Planification() {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v, ...(k === "commune_id" ? { circuit_id: "" } : {}) }));
 
+  const onChangeVehicle = (value) => {
+    const vehicule = vehicules.find(v => v.immatriculation.toUpperCase() === value.toUpperCase());
+    setForm((f) => ({
+      ...f,
+      vehicule_immatriculation: value.toUpperCase(),
+      vehicule_type: vehicule?.type || f.vehicule_type,
+    }));
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setErr(""); setOk(""); setBusy(true);
@@ -58,10 +69,21 @@ export default function Planification() {
         chauffeur_id: Number(form.chauffeur_id),
         eboueur1_id: Number(form.eboueur1_id),
         eboueur2_id: Number(form.eboueur2_id),
-        vehicule_id: Number(form.vehicule_id),
+        eboueur3_id: Number(form.eboueur3_id),
+        vehicule_immatriculation: form.vehicule_immatriculation,
+        vehicule_type: form.vehicule_type,
       });
       setOk("Équipage planifié");
-      setForm({ commune_id: "", circuit_id: "", chauffeur_id: "", eboueur1_id: "", eboueur2_id: "", vehicule_id: "" });
+      setForm({
+        commune_id: "",
+        circuit_id: "",
+        chauffeur_id: "",
+        eboueur1_id: "",
+        eboueur2_id: "",
+        eboueur3_id: "",
+        vehicule_immatriculation: "",
+        vehicule_type: "Tasseur 24m3",
+      });
       await loadAll();
     } catch (e) {
       setErr(e.message);
@@ -121,16 +143,35 @@ export default function Planification() {
             </div>
             <div>
               <label className="label">Véhicule</label>
-              <select className="select" required value={form.vehicule_id} onChange={e => set("vehicule_id", e.target.value)}>
-                <option value="">— Choisir —</option>
-                {vehicules.map(v => <option key={v.id} value={v.id}>{v.immatriculation}</option>)}
-              </select>
+              <input
+                className="input"
+                list="vehicules-list"
+                required
+                placeholder="Ex: CI-1234-AB"
+                value={form.vehicule_immatriculation}
+                onChange={(e) => onChangeVehicle(e.target.value)}
+              />
+              <datalist id="vehicules-list">
+                {vehicules.map((v) => (
+                  <option key={v.id} value={v.immatriculation}>{`${v.immatriculation} (${v.type || "type inconnu"})`}</option>
+                ))}
+              </datalist>
+            </div>
+            <div>
+              <label className="label">Type de véhicule</label>
+              <input
+                className="input"
+                required
+                placeholder="Tasseur 24m3"
+                value={form.vehicule_type}
+                onChange={e => set("vehicule_type", e.target.value)}
+              />
             </div>
             <div>
               <label className="label">Éboueur 1</label>
               <select className="select" required value={form.eboueur1_id} onChange={e => set("eboueur1_id", e.target.value)}>
                 <option value="">— Choisir —</option>
-                {eboueurs.filter(a => String(a.id) !== form.eboueur2_id).map(a => (
+                {eboueurs.filter(a => String(a.id) !== form.eboueur2_id && String(a.id) !== form.eboueur3_id).map(a => (
                   <option key={a.id} value={a.id}>{a.matricule} · {a.nom} {a.prenom}</option>
                 ))}
               </select>
@@ -139,7 +180,16 @@ export default function Planification() {
               <label className="label">Éboueur 2</label>
               <select className="select" required value={form.eboueur2_id} onChange={e => set("eboueur2_id", e.target.value)}>
                 <option value="">— Choisir —</option>
-                {eboueurs.filter(a => String(a.id) !== form.eboueur1_id).map(a => (
+                {eboueurs.filter(a => String(a.id) !== form.eboueur1_id && String(a.id) !== form.eboueur3_id).map(a => (
+                  <option key={a.id} value={a.id}>{a.matricule} · {a.nom} {a.prenom}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">Éboueur 3</label>
+              <select className="select" required value={form.eboueur3_id} onChange={e => set("eboueur3_id", e.target.value)}>
+                <option value="">— Choisir —</option>
+                {eboueurs.filter(a => String(a.id) !== form.eboueur1_id && String(a.id) !== form.eboueur2_id).map(a => (
                   <option key={a.id} value={a.id}>{a.matricule} · {a.nom} {a.prenom}</option>
                 ))}
               </select>
@@ -181,11 +231,16 @@ export default function Planification() {
                 <tr key={p.id}>
                   <td><span className="mono" style={{ color: "var(--lime)" }}>{p.circuit_code}</span></td>
                   <td>{p.commune}</td>
-                  <td>{p.chauffeur_nom} {p.chauffeur_prenom}</td>
+                  <td>{p.chauffeur_matricule} · {p.chauffeur_nom} {p.chauffeur_prenom}</td>
                   <td className="col-hide-mobile" style={{ fontSize: 12 }}>
-                    {p.eboueur1_nom} · {p.eboueur2_nom}
+                    {p.eboueur1_matricule} · {p.eboueur1_nom} {p.eboueur1_prenom}
+                    {` · ${p.eboueur2_matricule} · ${p.eboueur2_nom} ${p.eboueur2_prenom}`}
+                    {p.eboueur3_nom ? ` · ${p.eboueur3_matricule} · ${p.eboueur3_nom} ${p.eboueur3_prenom}` : ""}
                   </td>
-                  <td className="mono col-hide-mobile" style={{ color: "var(--text-dim)" }}>{p.vehicule_immat}</td>
+                  <td className="col-hide-mobile" style={{ color: "var(--text-dim)" }}>
+                    <div>{p.vehicule_immat}</div>
+                    <div style={{ fontSize: 11 }}>{p.vehicule_type}</div>
+                  </td>
                   <td style={{ textAlign: "right" }}>
                     <button className="btn danger" onClick={() => remove(p.id)} title="Supprimer">
                       <Trash2 size={14} />

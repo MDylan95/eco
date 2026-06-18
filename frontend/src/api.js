@@ -50,8 +50,36 @@ export const api = {
 
   // Référentiel
   communes: () => request("/communes"),
+  createCommune: (nom) =>
+    request("/communes", {
+      method: "POST",
+      body: JSON.stringify({ nom }),
+    }),
+  updateCommune: (id, nom) =>
+    request(`/communes/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ nom }),
+    }),
+  deleteCommune: (id) =>
+    request(`/communes/${id}`, {
+      method: "DELETE",
+    }),
   circuits: (commune_id) =>
     request("/circuits" + (commune_id ? `?commune_id=${commune_id}` : "")),
+  createCircuit: ({ code, commune_id }) =>
+    request("/circuits", {
+      method: "POST",
+      body: JSON.stringify({ code, commune_id }),
+    }),
+  updateCircuit: (id, { code, commune_id, actif }) =>
+    request(`/circuits/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ code, commune_id, actif }),
+    }),
+  deleteCircuit: (id) =>
+    request(`/circuits/${id}`, {
+      method: "DELETE",
+    }),
   agents: (fonction) =>
     request("/agents" + (fonction ? `?fonction=${fonction}` : "")),
   createAgent: ({ matricule, nom, prenom, fonction }) =>
@@ -99,5 +127,10 @@ export const api = {
     }),
 
   // Dashboard
-  dashboard: (date) => request(`/dashboard?date=${date}`),
+  dashboard: (date, options = {}) => {
+    const params = new URLSearchParams({ date });
+    if (options.week_date) params.set("week_date", options.week_date);
+    if (options.compare_week_date) params.set("compare_week_date", options.compare_week_date);
+    return request(`/dashboard?${params}`);
+  },
 };

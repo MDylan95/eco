@@ -7,11 +7,19 @@ const router = express.Router();
 // POST /api/productions  ·  étape 2 : saisie du tonnage
 router.post("/", authRequired, requireRole("admin", "superviseur"), async (req, res) => {
   const { planification_id, tonnage } = req.body;
-  if (!planification_id || tonnage === undefined || tonnage === null) {
-    return res.status(400).json({ error: "planification_id et tonnage requis" });
+  const planificationId = Number(planification_id);
+  const tonnageNum = Number(tonnage);
+
+  if (!Number.isInteger(planificationId) || planificationId <= 0) {
+    return res.status(400).json({ error: "planification_id invalide" });
   }
-  if (Number(tonnage) < 0) {
-    return res.status(400).json({ error: "Le tonnage doit être positif" });
+
+  if (!Number.isFinite(tonnageNum) || tonnageNum < 0) {
+    return res.status(400).json({ error: "Tonnage invalide (nombre positif attendu)" });
+  }
+
+  if (tonnageNum > 999999.99) {
+    return res.status(400).json({ error: "Le tonnage est trop élevé" });
   }
 
   try {
@@ -27,10 +35,16 @@ router.post("/", authRequired, requireRole("admin", "superviseur"), async (req, 
                      saisi_par = EXCLUDED.saisi_par,
                      date_saisie = NOW()
        RETURNING *`,
-      [planification_id, tonnage, centreId, req.user.id]
+      [planificationId, tonnageNum, centreId, req.user.id]
     );
     res.status(201).json(r.rows[0]);
   } catch (e) {
+    if (e.code === "23503") {
+      return res.status(404).json({ error: "La planification demandée n'existe pas." });
+    }
+    if (e.code === "23505") {
+      return res.status(409).json({ error: "Tonnage déjà saisi pour cette planification." });
+    }
     console.error(e);
     res.status(500).json({ error: "Erreur serveur" });
   }
