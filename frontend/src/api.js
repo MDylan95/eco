@@ -28,7 +28,12 @@ async function request(path, opts = {}) {
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(API_BASE + path, { ...opts, headers });
+  let res;
+  try {
+    res = await fetch(API_BASE + path, { ...opts, headers });
+  } catch (error) {
+    throw new Error("Impossible de joindre le serveur. Vérifiez le déploiement backend et le CORS.");
+  }
 
   if (res.status === 401) {
     clearSession();

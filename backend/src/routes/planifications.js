@@ -94,70 +94,70 @@ router.get("/", authRequired, async (req, res) => {
 
 // POST /api/planifications  ·  étape 1 : créer un équipage du jour
 router.post("/", authRequired, requireRole("admin", "superviseur"), async (req, res) => {
-  const {
-    date_planification,
-    circuit_id,
-    chauffeur_id,
-    eboueur1_id,
-    eboueur2_id,
-    eboueur3_id,
-    vehicule_id,
-    vehicule_immatriculation,
-    vehicule_type,
-  } = req.body;
-
-  const date = normalizeDate(normalizeText(date_planification));
-
-  if (!date) {
-    return res.status(400).json({ error: "La date est invalide (format YYYY-MM-DD attendu)" });
-  }
-
-  const data = {
-    circuit_id: normalizeInt(circuit_id),
-    chauffeur_id: normalizeInt(chauffeur_id),
-    eboueur1_id: normalizeInt(eboueur1_id),
-    eboueur2_id: normalizeInt(eboueur2_id),
-    eboueur3_id: normalizeInt(eboueur3_id),
-    vehicule_id: normalizeInt(vehicule_id),
-  };
-
-  const missingFields = [];
-  if (!data.circuit_id) missingFields.push("circuit");
-  if (!data.chauffeur_id) missingFields.push("chauffeur");
-  if (!data.eboueur1_id) missingFields.push("eboueur1");
-  if (!data.eboueur2_id) missingFields.push("eboueur2");
-  if (!data.eboueur3_id) missingFields.push("eboueur3");
-
-  if (missingFields.length > 0) {
-    return res.status(400).json({
-      error: `Champs manquants ou invalides : ${formatFieldList(missingFields)}`,
-      fields: missingFields,
-    });
-  }
-
-  const agentIds = [data.chauffeur_id, data.eboueur1_id, data.eboueur2_id, data.eboueur3_id];
-  const uniqueAgents = new Set(agentIds);
-  if (uniqueAgents.size !== 4) {
-    return res.status(400).json({ error: "Chauffeur et 3 éboueurs doivent être différents" });
-  }
-
-  const circuitRef = await db.query(
-    "SELECT actif FROM circuits WHERE id = $1",
-    [data.circuit_id]
-  );
-  if (circuitRef.rowCount === 0) {
-    return res.status(400).json({ error: "Circuit introuvable" });
-  }
-  if (!circuitRef.rows[0].actif) {
-    return res.status(409).json({ error: "Circuit désactivé" });
-  }
-
-  let finalVehiculeId = data.vehicule_id;
-  if (!finalVehiculeId && !vehicule_immatriculation) {
-    return res.status(400).json({ error: "Le véhicule est requis" });
-  }
-
   try {
+    const {
+      date_planification,
+      circuit_id,
+      chauffeur_id,
+      eboueur1_id,
+      eboueur2_id,
+      eboueur3_id,
+      vehicule_id,
+      vehicule_immatriculation,
+      vehicule_type,
+    } = req.body;
+
+    const date = normalizeDate(normalizeText(date_planification));
+
+    if (!date) {
+      return res.status(400).json({ error: "La date est invalide (format YYYY-MM-DD attendu)" });
+    }
+
+    const data = {
+      circuit_id: normalizeInt(circuit_id),
+      chauffeur_id: normalizeInt(chauffeur_id),
+      eboueur1_id: normalizeInt(eboueur1_id),
+      eboueur2_id: normalizeInt(eboueur2_id),
+      eboueur3_id: normalizeInt(eboueur3_id),
+      vehicule_id: normalizeInt(vehicule_id),
+    };
+
+    const missingFields = [];
+    if (!data.circuit_id) missingFields.push("circuit");
+    if (!data.chauffeur_id) missingFields.push("chauffeur");
+    if (!data.eboueur1_id) missingFields.push("eboueur1");
+    if (!data.eboueur2_id) missingFields.push("eboueur2");
+    if (!data.eboueur3_id) missingFields.push("eboueur3");
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        error: `Champs manquants ou invalides : ${formatFieldList(missingFields)}`,
+        fields: missingFields,
+      });
+    }
+
+    const agentIds = [data.chauffeur_id, data.eboueur1_id, data.eboueur2_id, data.eboueur3_id];
+    const uniqueAgents = new Set(agentIds);
+    if (uniqueAgents.size !== 4) {
+      return res.status(400).json({ error: "Chauffeur et 3 éboueurs doivent être différents" });
+    }
+
+    const circuitRef = await db.query(
+      "SELECT actif FROM circuits WHERE id = $1",
+      [data.circuit_id]
+    );
+    if (circuitRef.rowCount === 0) {
+      return res.status(400).json({ error: "Circuit introuvable" });
+    }
+    if (!circuitRef.rows[0].actif) {
+      return res.status(409).json({ error: "Circuit désactivé" });
+    }
+
+    let finalVehiculeId = data.vehicule_id;
+    if (!finalVehiculeId && !vehicule_immatriculation) {
+      return res.status(400).json({ error: "Le véhicule est requis" });
+    }
+
     const agents = await db.query(
       "SELECT id, fonction, actif FROM agents WHERE id = ANY($1::int[])",
       [agentIds]
@@ -263,7 +263,7 @@ router.post("/", authRequired, requireRole("admin", "superviseur"), async (req, 
       return res.status(400).json({ error: "Une référence fournie n'existe pas (circuit, agents ou véhicule)." });
     }
     console.error(e);
-    res.status(500).json({ error: "Erreur serveur" });
+    res.status(500).json({ error: "Erreur serveur lors de la création de la planification" });
   }
 });
 
