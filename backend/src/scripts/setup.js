@@ -159,6 +159,76 @@ async function ensurePlanificationIntegrity() {
   `);
 }
 
+async function ensureProductionIntegrity() {
+  const hasProductions = await tableExists("productions");
+  if (!hasProductions) return;
+
+  await db.query(`
+    ALTER TABLE productions
+      ADD COLUMN IF NOT EXISTS voyages INT
+  `);
+
+  await db.query(`
+    UPDATE productions
+       SET voyages = COALESCE(voyages, 0)
+     WHERE voyages IS NULL
+  `);
+
+  await db.query(`
+    ALTER TABLE productions
+      ALTER COLUMN voyages SET DEFAULT 0,
+      ALTER COLUMN voyages SET NOT NULL
+  `);
+
+  await db.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'productions'::regclass
+          AND conname = 'productions_voyages_non_negatifs'
+      ) THEN
+        ALTER TABLE productions
+          ADD CONSTRAINT productions_voyages_non_negatifs CHECK (voyages >= 0);
+      END IF;
+    END $$
+  `);
+
+  await db.query(`
+    ALTER TABLE productions
+      ADD COLUMN IF NOT EXISTS taux_traitement NUMERIC(5,2)
+  `);
+
+  await db.query(`
+    UPDATE productions
+       SET taux_traitement = COALESCE(taux_traitement, 0)
+     WHERE taux_traitement IS NULL
+  `);
+
+  await db.query(`
+    ALTER TABLE productions
+      ALTER COLUMN taux_traitement SET DEFAULT 0,
+      ALTER COLUMN taux_traitement SET NOT NULL
+  `);
+
+  await db.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'productions'::regclass
+          AND conname = 'productions_taux_traitement_borne'
+      ) THEN
+        ALTER TABLE productions
+          ADD CONSTRAINT productions_taux_traitement_borne
+          CHECK (taux_traitement >= 0 AND taux_traitement <= 100);
+      END IF;
+    END $$
+  `);
+}
+
 async function main() {
   console.log("🔧 Vérification du schéma...");
 
@@ -172,6 +242,7 @@ async function main() {
 
   if (r.rows[0].exists) {
     await ensurePlanificationIntegrity();
+    await ensureProductionIntegrity();
     console.log("✓ Schéma déjà présent, migration minimale appliquée.");
     process.exit(0);
   }

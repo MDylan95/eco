@@ -153,6 +153,8 @@ CREATE TABLE productions (
   id                  SERIAL PRIMARY KEY,
   planification_id    INT UNIQUE NOT NULL REFERENCES planifications(id) ON DELETE CASCADE,
   tonnage             NUMERIC(6,2) NOT NULL CHECK (tonnage >= 0),
+  voyages             INTEGER NOT NULL DEFAULT 0 CHECK (voyages >= 0),
+  taux_traitement     NUMERIC(5,2) NOT NULL DEFAULT 0 CHECK (taux_traitement >= 0 AND taux_traitement <= 100),
   centre_transfert_id INT REFERENCES centres_transfert(id),
   saisi_par           INT REFERENCES users(id),
   date_saisie         TIMESTAMP DEFAULT NOW()

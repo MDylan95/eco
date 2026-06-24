@@ -125,11 +125,13 @@ export const api = {
     request(`/planifications/${id}`, { method: "DELETE" }),
 
   // Productions
-  saveProduction: (planification_id, tonnage) =>
-    request("/productions", {
+  saveProduction: (planification_id, data) => {
+    const payload = typeof data === "number" ? { tonnage: data } : (data || {});
+    return request("/productions", {
       method: "POST",
-      body: JSON.stringify({ planification_id, tonnage }),
-    }),
+      body: JSON.stringify({ planification_id, ...payload }),
+    });
+  },
 
   // Dashboard
   dashboard: (date, options = {}) => {

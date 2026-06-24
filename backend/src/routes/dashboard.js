@@ -139,7 +139,7 @@ router.get("/", authRequired, async (req, res) => {
         a.matricule,
         a.nom,
         a.prenom,
-        COUNT(pr.id)::int AS voyages,
+        COALESCE(SUM(COALESCE(pr.voyages, 0)), 0)::int AS voyages,
         COALESCE(SUM(pr.tonnage), 0)::numeric AS tonnage_hebdo
       FROM planifications p
       JOIN semaine s ON TRUE
@@ -171,7 +171,7 @@ router.get("/", authRequired, async (req, res) => {
         a.matricule,
         a.nom,
         a.prenom,
-        COUNT(pr.id)::int AS voyages_precedent,
+        COALESCE(SUM(COALESCE(pr.voyages, 0)), 0)::int AS voyages_precedent,
         COALESCE(SUM(pr.tonnage), 0)::numeric AS tonnage_precedent
       FROM planifications p
       JOIN semaine s ON TRUE
@@ -192,7 +192,7 @@ router.get("/", authRequired, async (req, res) => {
       )
       SELECT
         COALESCE(COUNT(p.id), 0)::int AS equipages_planifies,
-        COALESCE(COUNT(pr.id), 0)::int AS voyages,
+        COALESCE(SUM(COALESCE(pr.voyages, 0)), 0)::int AS voyages,
         COALESCE(SUM(pr.tonnage), 0)::numeric AS tonnage_hebdo
       FROM planifications p
       JOIN semaine s ON TRUE
@@ -210,7 +210,7 @@ router.get("/", authRequired, async (req, res) => {
       )
       SELECT
         COALESCE(COUNT(p.id), 0)::int AS equipages_planifies,
-        COALESCE(COUNT(pr.id), 0)::int AS voyages,
+        COALESCE(SUM(COALESCE(pr.voyages, 0)), 0)::int AS voyages,
         COALESCE(SUM(pr.tonnage), 0)::numeric AS tonnage_hebdo
       FROM planifications p
       JOIN semaine s ON TRUE

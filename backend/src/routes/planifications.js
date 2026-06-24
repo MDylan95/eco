@@ -70,6 +70,7 @@ router.get("/", authRequired, async (req, res) => {
         v.id AS vehicule_id, v.immatriculation AS vehicule_immat,
         v.type AS vehicule_type,
         pr.tonnage, pr.date_saisie AS tonnage_date,
+        pr.voyages, pr.taux_traitement,
         CASE WHEN pr.id IS NULL THEN 'pending' ELSE 'done' END AS statut
       FROM planifications p
       JOIN circuits ci ON ci.id = p.circuit_id

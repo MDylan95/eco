@@ -62,6 +62,47 @@ export default function Dashboard() {
     load(date, weekDate, compareWeekDate);
   }, [date, weekDate, compareWeekDate]);
 
+  useEffect(() => {
+    const shouldReload = (valueDate) => {
+      return !valueDate || valueDate === date;
+    };
+
+    const onExternalRefresh = (event) => {
+      const incomingDate = event?.detail?.date;
+      if (shouldReload(incomingDate)) {
+        load(date, weekDate, compareWeekDate);
+      }
+    };
+
+    const onStorageRefresh = (event) => {
+      if (event.key !== "eco:dashboard:refresh") return;
+      let incomingDate;
+      try {
+        const payload = event.newValue ? JSON.parse(event.newValue) : null;
+        incomingDate = payload?.date;
+      } catch (_) {
+        incomingDate = null;
+      }
+      if (shouldReload(incomingDate)) {
+        load(date, weekDate, compareWeekDate);
+      }
+    };
+
+    const onFocus = () => {
+      load(date, weekDate, compareWeekDate);
+    };
+
+    window.addEventListener("eco:dashboard-refresh", onExternalRefresh);
+    window.addEventListener("storage", onStorageRefresh);
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      window.removeEventListener("eco:dashboard-refresh", onExternalRefresh);
+      window.removeEventListener("storage", onStorageRefresh);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [date, weekDate, compareWeekDate]);
+
   if (loading && !data) return <div className="dim">Chargement…</div>;
   if (err) return <div className="error">{err}</div>;
   if (!data) return null;
