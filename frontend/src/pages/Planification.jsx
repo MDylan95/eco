@@ -107,9 +107,11 @@ export default function Planification() {
         vehicule_type: form.vehicule_type,
       });
       setOk("Équipage planifié");
+      const currentCommune = form.commune_id;
+      const currentCircuit = form.circuit_id;
       setForm({
-        commune_id: "",
-        circuit_id: "",
+        commune_id: currentCommune,
+        circuit_id: currentCircuit,
         chauffeur_id: "",
         eboueur1_id: "",
         eboueur2_id: "",
