@@ -478,9 +478,10 @@ export default function Dashboard() {
               {planif.map((p) => (
                 <tr key={p.id}>
                   <td>
-                    <span className="mono" style={{ color: C.lime }}>
-                      {p.circuit_code}
-                    </span>
+                    <span className="mono" style={{ color: C.lime }}>{p.circuit_code}</span>
+                    <div className="mono" style={{ color: C.textMute, fontSize: 11, marginTop: 2 }}>
+                      R{p.rotation_no}
+                    </div>
                   </td>
                   <td>{p.commune}</td>
                   <td>

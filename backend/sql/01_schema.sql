@@ -87,6 +87,7 @@ CREATE TABLE planifications (
   id                 SERIAL PRIMARY KEY,
   date_planification DATE NOT NULL,
   circuit_id         INT  NOT NULL REFERENCES circuits(id),
+  rotation_no        INT  NOT NULL DEFAULT 1 CHECK (rotation_no > 0),
   chauffeur_id       INT  NOT NULL REFERENCES agents(id),
   eboueur1_id        INT  NOT NULL REFERENCES agents(id),
   eboueur2_id        INT  NOT NULL REFERENCES agents(id),
@@ -95,8 +96,8 @@ CREATE TABLE planifications (
   superviseur_id     INT  REFERENCES users(id),
   created_at         TIMESTAMP DEFAULT NOW(),
 
-  -- Un circuit ne peut être planifié qu'une fois par jour
-  UNIQUE (date_planification, circuit_id),
+  -- Plusieurs rotations possibles sur un même circuit dans la même nuit
+  UNIQUE (date_planification, circuit_id, rotation_no),
 
   -- Les 3 agents de l'équipage doivent être distincts
   CHECK (chauffeur_id <> eboueur1_id

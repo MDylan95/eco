@@ -57,6 +57,7 @@ router.get("/", authRequired, async (req, res) => {
       `
       SELECT
         p.id, p.date_planification,
+        p.rotation_no,
         ci.id AS circuit_id, ci.code AS circuit_code,
         co.id AS commune_id, co.nom AS commune,
         ch.id AS chauffeur_id, ch.matricule AS chauffeur_matricule,
@@ -82,7 +83,7 @@ router.get("/", authRequired, async (req, res) => {
       JOIN vehicules v ON v.id = p.vehicule_id
       LEFT JOIN productions pr ON pr.planification_id = p.id
       WHERE p.date_planification = $1
-      ORDER BY ci.code
+      ORDER BY ci.code, p.rotation_no, p.created_at, p.id
     `,
       [normalizedDate]
     );
@@ -99,6 +100,7 @@ router.post("/", authRequired, requireRole("admin", "superviseur"), async (req, 
     const {
       date_planification,
       circuit_id,
+      rotation_no,
       chauffeur_id,
       eboueur1_id,
       eboueur2_id,
@@ -116,6 +118,7 @@ router.post("/", authRequired, requireRole("admin", "superviseur"), async (req, 
 
     const data = {
       circuit_id: normalizeInt(circuit_id),
+      rotation_no: normalizeInt(rotation_no),
       chauffeur_id: normalizeInt(chauffeur_id),
       eboueur1_id: normalizeInt(eboueur1_id),
       eboueur2_id: normalizeInt(eboueur2_id),
@@ -209,6 +212,20 @@ router.post("/", authRequired, requireRole("admin", "superviseur"), async (req, 
       }
     }
 
+    let finalRotationNo = data.rotation_no;
+    if (!finalRotationNo) {
+      const nextRotation = await db.query(
+        `
+        SELECT COALESCE(MAX(rotation_no), 0) + 1 AS next_rotation
+        FROM planifications
+        WHERE date_planification = $1
+          AND circuit_id = $2
+        `,
+        [date, data.circuit_id]
+      );
+      finalRotationNo = Number(nextRotation.rows[0].next_rotation);
+    }
+
     // Vérification: éboueurs/chauffeur déjà affectés ce jour-là ?
     const check = await db.query(
       `SELECT 1 FROM planifications
@@ -237,13 +254,16 @@ router.post("/", authRequired, requireRole("admin", "superviseur"), async (req, 
 
     const r = await db.query(
       `INSERT INTO planifications
-       (date_planification, circuit_id, chauffeur_id, eboueur1_id, eboueur2_id, eboueur3_id, vehicule_id, superviseur_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [date, data.circuit_id, data.chauffeur_id, data.eboueur1_id, data.eboueur2_id, data.eboueur3_id, finalVehiculeId, req.user.id]
+       (date_planification, circuit_id, rotation_no, chauffeur_id, eboueur1_id, eboueur2_id, eboueur3_id, vehicule_id, superviseur_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [date, data.circuit_id, finalRotationNo, data.chauffeur_id, data.eboueur1_id, data.eboueur2_id, data.eboueur3_id, finalVehiculeId, req.user.id]
     );
     res.status(201).json(r.rows[0]);
   } catch (e) {
     if (e.code === "23505") {
+      if (e.constraint === "uniq_planif_rotation_par_jour") {
+        return res.status(409).json({ error: "Cette rotation existe déjà pour ce circuit ce jour." });
+      }
       if (e.constraint === "uniq_chauffeur_par_jour") {
         return res.status(409).json({ error: "Le chauffeur est déjà affecté à un autre circuit ce jour." });
       }

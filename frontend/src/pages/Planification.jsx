@@ -247,6 +247,7 @@ export default function Planification() {
             <thead>
               <tr>
                 <th>Circ.</th>
+                <th>Rotation</th>
                 <th>Commune</th>
                 <th>Chauffeur</th>
                 <th className="col-hide-mobile">Éboueurs</th>
@@ -256,13 +257,14 @@ export default function Planification() {
             </thead>
             <tbody>
               {planif.length === 0 && (
-                <tr><td colSpan={6} className="dim" style={{ textAlign: "center", padding: 24 }}>
+                <tr><td colSpan={7} className="dim" style={{ textAlign: "center", padding: 24 }}>
                   Aucun équipage planifié.
                 </td></tr>
               )}
               {planif.map(p => (
                 <tr key={p.id}>
                   <td><span className="mono" style={{ color: "var(--lime)" }}>{p.circuit_code}</span></td>
+                  <td className="mono" style={{ color: "var(--text-dim)" }}>R{p.rotation_no}</td>
                   <td>{p.commune}</td>
                   <td>{p.chauffeur_matricule} · {p.chauffeur_nom} {p.chauffeur_prenom}</td>
                   <td className="col-hide-mobile" style={{ fontSize: 12 }}>

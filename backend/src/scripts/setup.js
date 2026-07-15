@@ -88,7 +88,65 @@ async function ensurePlanificationIntegrity() {
     ALTER COLUMN eboueur3_id SET NOT NULL
   `);
 
-  // 4) Ré-application idempotente de la contrainte d'unicité des 4 agents
+  // 4) Ajouter l'ordre de rotation par circuit/nuit pour autoriser plusieurs équipages
+  await db.query(`
+    ALTER TABLE planifications
+    ADD COLUMN IF NOT EXISTS rotation_no INT
+  `);
+
+  await db.query(`
+    UPDATE planifications p
+       SET rotation_no = ranked.rn
+      FROM (
+        SELECT id,
+               ROW_NUMBER() OVER (
+                 PARTITION BY date_planification, circuit_id
+                 ORDER BY created_at, id
+               ) AS rn
+        FROM planifications
+      ) AS ranked
+     WHERE p.id = ranked.id
+       AND p.rotation_no IS NULL
+  `);
+
+  await db.query(`
+    ALTER TABLE planifications
+      ALTER COLUMN rotation_no SET DEFAULT 1,
+      ALTER COLUMN rotation_no SET NOT NULL
+  `);
+
+  await db.query(`
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'planifications'::regclass
+          AND conname = 'planifications_date_planification_circuit_id_key'
+      ) THEN
+        ALTER TABLE planifications
+          DROP CONSTRAINT planifications_date_planification_circuit_id_key;
+      END IF;
+    END $$;
+  `);
+
+  await db.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'planifications'::regclass
+          AND conname = 'uniq_planif_rotation_par_jour'
+      ) THEN
+        ALTER TABLE planifications
+          ADD CONSTRAINT uniq_planif_rotation_par_jour
+          UNIQUE (date_planification, circuit_id, rotation_no);
+      END IF;
+    END $$;
+  `);
+
+  // 5) Ré-application idempotente de la contrainte d'unicité des 4 agents
   await db.query(`
     DO $$
     BEGIN
@@ -127,7 +185,7 @@ async function ensurePlanificationIntegrity() {
     throw new Error("La contrainte chk_planif_agents_distinct n'a pas pu être créée.");
   }
 
-  // 5) Règle : un même éboueur ne peut apparaître qu'une seule fois par nuit (toutes colonnes confondues)
+  // 6) Règle : un même éboueur ne peut apparaître qu'une seule fois par nuit (toutes colonnes confondues)
   await db.query(`
     CREATE OR REPLACE FUNCTION public.prevent_duplicate_eboueurs_per_jour()
     RETURNS TRIGGER AS $$

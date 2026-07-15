@@ -85,13 +85,19 @@ router.get("/", authRequired, async (req, res) => {
     const parCircuitQ = await db.query(
       `
       SELECT ci.code AS circuit, co.nom AS commune,
-             COALESCE(pr.tonnage, 0)::numeric AS tonnage,
-             CASE WHEN pr.id IS NULL THEN 'pending' ELSE 'done' END AS statut
+             COUNT(p.id)::int AS equipages,
+             COALESCE(SUM(pr.tonnage), 0)::numeric AS tonnage,
+             CASE
+               WHEN COUNT(pr.id) = 0 THEN 'pending'
+               WHEN COUNT(pr.id) = COUNT(p.id) THEN 'done'
+               ELSE 'partial'
+             END AS statut
       FROM planifications p
       JOIN circuits ci ON ci.id = p.circuit_id
       JOIN communes co ON co.id = ci.commune_id
       LEFT JOIN productions pr ON pr.planification_id = p.id
       WHERE p.date_planification = $1
+      GROUP BY ci.code, co.nom
       ORDER BY ci.code
       `,
       [date]

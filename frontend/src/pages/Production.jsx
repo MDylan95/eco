@@ -138,7 +138,12 @@ export default function Production() {
               )}
               {planif.map(p => (
                 <tr key={p.id}>
-                  <td><span className="mono" style={{ color: "var(--lime)" }}>{p.circuit_code}</span></td>
+                  <td>
+                    <span className="mono" style={{ color: "var(--lime)" }}>{p.circuit_code}</span>
+                    <div className="mono" style={{ color: "var(--text-dim)", fontSize: 11, marginTop: 2 }}>
+                      R{p.rotation_no}
+                    </div>
+                  </td>
                   <td>{p.commune}</td>
                   <td>{p.chauffeur_matricule ? `${p.chauffeur_matricule} · ` : ""}{p.chauffeur_nom} {p.chauffeur_prenom}</td>
                   <td className="mono col-hide-mobile" style={{ color: "var(--text-dim)" }}>{p.vehicule_immat}</td>
